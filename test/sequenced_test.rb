@@ -68,59 +68,59 @@ class SequencedTest < ActiveSupport::TestCase
     answer = Answer.new
     assert_raises(ArgumentError) { answer.save }
   end
-  
+
   test "custom sequential id column" do
     account = Account.create
     user = account.users.create
     assert_equal 1, user.custom_sequential_id
   end
-  
+
   test "sequential id remains on save" do
     question = Question.create
     answer = question.answers.create
     assert_equal 1, answer.sequential_id
-    
+
     answer.reload
     answer.body = "Updated body"
     answer.save
     assert_equal 1, answer.sequential_id
   end
-  
+
   test "undefined sequential id column" do
     account = Account.create
     address = account.addresses.build
     assert_raises(ArgumentError) { address.save }
   end
-  
+
   test "manually setting sequential id" do
     question = Question.create
     answer = question.answers.build(:sequential_id => 10)
     another_answer = question.answers.build(:sequential_id => 10)
     answer.save
     another_answer.save
-    
+
     assert_equal 10, answer.sequential_id
     assert_equal 10, another_answer.sequential_id
   end
-  
+
   test "model with a default scope for sorting" do
     question = Question.create
     (1..3).each { |id| question.comments.create(:sequential_id => id) }
     comment = question.comments.create
     assert_equal 4, comment.sequential_id
   end
-  
+
   test "multi-column scopes" do
     Email.create(:emailable_id => 1, :emailable_type => "User", :sequential_id => 2)
     Email.create(:emailable_id => 1, :emailable_type => "Question", :sequential_id => 3)
     email = Email.create(:emailable_id => 1, :emailable_type => "User")
     assert_equal 3, email.sequential_id
   end
-  
+
   test "skip option" do
     rating = Rating.create(:comment_id => 1, :score => 1)
     assert_equal 1, rating.sequential_id
-    
+
     rating = Rating.create(:comment_id => 1, :score => 0)
     assert_equal nil, rating.sequential_id
   end
@@ -281,6 +281,20 @@ class SequencedTest < ActiveSupport::TestCase
 		assert Promotable.find(p3.id).sequential_id==4
 		assert_raise(Exception){p3.promote_to!(12)}
 	end
+
+  test 'promote_to custom id' do
+    account = Account.create
+    user1 = account.users.create
+    assert_equal 1, user1.custom_sequential_id
+    user2 = account.users.create
+    assert_equal 2, user2.custom_sequential_id
+    user3 = account.users.create
+    assert_equal 3, user3.custom_sequential_id
+
+    user1.promote_to(3)
+    assert_equal 3, user1.custom_sequential_id
+    assert_equal 2, user2.custom_sequential_id
+  end
 
 	test 'get_scoped_records' do
 		boss1=Boss.create({:name=>'boss1'})

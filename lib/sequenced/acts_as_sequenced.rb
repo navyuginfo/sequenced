@@ -172,27 +172,28 @@ module Sequenced
 			#Same as promote operation, except, this operation swaps the sequential_id of
 			#record in position <position> with current record
 			def promote_to!(position)
+				column = self.class.sequenced_options[:column]
 				q=self.get_scoped_records
-				min=self.get_sequence_top.sequential_id
-				max=self.get_sequence_bottom.sequential_id
-				my_sid=self.sequential_id
-				if position<=max and position>=min
-					replacables=q.where({:sequential_id=>position})
+				min=self.get_sequence_top.send(column)
+				max=self.get_sequence_bottom.send(column)
+				my_sid=self.send(column)
+				if position<=max and position>=min and position.to_i!=self.send(column)
+					replacables=q.where({:"#{column}"=>position})
 					if replacables.count>0
 						replaced=replacables.first
-						replaced.sequential_id=my_sid
+						replaced["#{column}"]=my_sid
 						if !replaced.save
 							raise Exception,"Target replacable entity couldn't be saved"
 						end
 
-						self.sequential_id=position
+						self["#{column}"]=position.to_i
 						if !self.save
 							raise Exception,"Current entity couldn't be saved"
 						else
 							return true
 						end
 					else
-						raise Exception,"Replacable record not found in position #{position}"
+						raise Exception,"Replacable record not found in position #{position.to_i}"
 					end
 				else
 					raise Exception,"Promotion to an unbound location is a violation."
